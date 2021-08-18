@@ -36,13 +36,16 @@ int main()
 			printf("%s\n", var.c_str());
 		}*/
 
-		//res = MT_CopyFile("E:\\111\\纯色", "E:\\111\\纯色111",false);
+		res = MT_CopyFile("E:\\111\\cap.jpg", "E:\\111\\456\\2\\cap.jpg");
 
 		//res = MT_Delete("E:\\111\\1111");
 
-		//res = MT_StartExe("E:\\太阳能组件\\小项目\\ShowImage\\x64\\Release\\ColorDiff.exe",SF_OPENMORE);
-		res = MT_KillExe("ColorDiff.exe");
-		printf("%d\n", res);
+		//res = MT_StartExe("E:\\111\\ColorDiff.exe",SF_OPENMORE);
+		//res = MT_KillExe("ColorDiff.exe");
+		string path;
+		vector<string> vPath;
+		res = MT_CmdOrder(CT_OPEN,"E:\\111");
+		printf("%d----%s\n", res, path.c_str());
 		getchar();
 	}
 }

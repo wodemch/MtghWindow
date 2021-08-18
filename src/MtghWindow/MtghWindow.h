@@ -71,6 +71,23 @@ DLL_API int MT_Delete(const char* File);
 */
 DLL_API int MT_CopyFile(const char* oldF, const char* newF,bool bFailIfExists=false);
 
+/*
+*选择文件夹
+*params
+*path 传出路径 
+*/
+DLL_API bool MT_SelectFolder(string& path);
+
+/*
+*选择文件
+*params
+*path 传出路径
+*lpszFilter 文件过滤 BMP Files (*.bmp)|*.bmp|JPG Files (*.jpg)
+*all_sel_files 传入vector时  可选择多个
+*/
+DLL_API bool MT_SelectFile(string& path, const char* lpszFilter = NULL);
+DLL_API bool MT_SelectFile(vector<string>& all_sel_files, const char*  lpszFilter = NULL);
+
 #pragma endregion
 
 #pragma region exe operation
@@ -80,6 +97,13 @@ enum EM_StartFlag
 	SF_NO=0,//无
 	SF_RESTART,//重启
 	SF_OPENMORE,//多开
+};
+
+enum EM_CmdType
+{
+	CT_KillExe = 0,	//结束进程
+	CT_Mkdir,		//创建目录
+	CT_OPEN,		//打开目录，文件		
 };
 
 /*
@@ -98,6 +122,15 @@ DLL_API bool MT_StartExe(string exePath, EM_StartFlag Flag = SF_NO, string cmdPa
 *exeName exe名称
 */
 DLL_API bool MT_KillExe(string exeName);
+
+/*
+*执行cmd命令
+*params
+*type EM_CmdType
+*params exe名称
+*/
+DLL_API bool MT_CmdOrder(EM_CmdType type, string params);
+
 #pragma endregion
 
 /*

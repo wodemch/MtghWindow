@@ -61,7 +61,7 @@ BOOL myDeleteDirectory(CString directory_path)   //删除一个文件夹下的所有内容
 
 BOOL myCopyDirectory(CString olddir,CString newdir, bool bFailIfExists)   //拷贝文件夹下的所有内容
 {
-	CreateDirectory(newdir.GetBuffer(),NULL);
+	CreateDirectory(newdir, NULL);
 	int ret = 0;
 	CFileFind finder;
 	CString path;
@@ -86,6 +86,40 @@ BOOL myCopyDirectory(CString olddir,CString newdir, bool bFailIfExists)   //拷贝
 		}			
 	}
 	return ret;
+}
+
+bool MT_CmdOrder(EM_CmdType type,string params)
+{	
+	char cmd[296]="";
+	switch(type)
+	{
+	case CT_KillExe:
+		sprintf_s(cmd, 296, "cmd /c taskkill /f /t /im %s", params.c_str());
+		break;
+	case CT_Mkdir:
+		sprintf_s(cmd, 296, "cmd /c mkdir %s", params.c_str());
+		break;
+	case CT_OPEN:
+		sprintf_s(cmd, 296, "cmd /c start %s", params.c_str());
+		break;
+	default:
+		break;
+	}
+	STARTUPINFO   si;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	PROCESS_INFORMATION   pi;
+	ZeroMemory(&pi, sizeof(pi));
+	if (CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+	{
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+	}
+	return true;
+
+	//UINT res = WinExec(cmd, SW_HIDE);
+	//return 0 == system(cmd);
 }
 
 bool MT_IsDirHaveFolder(string Dir, string FolderName)
@@ -181,7 +215,7 @@ bool MT_IsExist(const char* path, bool bCreate)
 		return true;
 	}
 	else if(bCreate){
-		return CreateDirectory(path,NULL);
+		return MT_CmdOrder(CT_Mkdir,path);
 	}
 	return false;
 }
@@ -206,13 +240,72 @@ int MT_CopyFile(const char* oldF, const char* newF, bool bFailIfExists)
 		return 0;
 	}
 	int res = 0;
+
 	if (IsFile(oldF)) {
+		string newpath = newF;
+		int lt = newpath.rfind("\\");
+		newpath = newpath.substr(0, lt);
+		MT_IsExist(newpath.c_str(), true);
 		res = CopyFile(oldF, newF, bFailIfExists);
 	}
 	else{
+		MT_IsExist(newF,true);
 		res = myCopyDirectory(oldF, newF,bFailIfExists);
 	}
 	return res;
+}
+
+bool MT_SelectFolder(string& path)
+{
+	TCHAR szFolderPath[MAX_PATH] = { 0 };
+	CString strFolderPath = _T("");
+
+	BROWSEINFO sInfo;
+	::ZeroMemory(&sInfo, sizeof(BROWSEINFO));
+
+	LPITEMIDLIST lpidlBrowse = ::SHBrowseForFolder(&sInfo);
+	if (lpidlBrowse != NULL)
+	{
+		if (::SHGetPathFromIDList(lpidlBrowse, szFolderPath))
+		{
+			path = szFolderPath;
+		}
+		::CoTaskMemFree(lpidlBrowse);
+		return true;
+	}
+	return false;
+}
+
+bool MT_SelectFile(string& path, const char* lpszFilter)
+{
+	CFileDialog dlg(TRUE, NULL, "", OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,lpszFilter, NULL);
+
+	dlg.m_ofn.lpstrTitle = "Select File";
+	INT_PTR result = dlg.DoModal();
+	if (result == IDOK)
+	{
+		path = dlg.GetPathName();//获取文件名-包含路径
+		return true;
+	}
+	return false;
+}
+
+bool MT_SelectFile(vector<string>& all_sel_files, const char* lpszFilter)
+{
+	
+	CFileDialog dlgFile(TRUE, "", NULL, OFN_ALLOWMULTISELECT | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, lpszFilter, NULL);
+	dlgFile.m_ofn.lpstrTitle = "Select Files";;
+	if (dlgFile.DoModal() == IDOK)
+	{
+		POSITION fileNamesPosition = dlgFile.GetStartPosition();
+		while (fileNamesPosition != NULL)
+		{
+			string path = dlgFile.GetNextPathName(fileNamesPosition);
+			all_sel_files.push_back(path);
+		}
+		return true;
+	}
+	return false;
 }
 
 DWORD IsExistProcess(const char*  szProcessName)
@@ -240,9 +333,7 @@ DWORD IsExistProcess(const char*  szProcessName)
 }
 bool MT_KillExe(string exeName)
 {
-	char cmd[296];
-	sprintf_s(cmd, 296, "taskkill /f /t /im %s", exeName.c_str());
-	return 0 == system(cmd);
+	return MT_CmdOrder(CT_KillExe, exeName);
 }
 
 bool MT_StartExe(string exePath, EM_StartFlag Flag,string cmdParam, string workDir)
