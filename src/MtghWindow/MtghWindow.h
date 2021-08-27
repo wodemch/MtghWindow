@@ -66,10 +66,10 @@ DLL_API int MT_Delete(const char* File);
 /*
 *同步文件、文件夹
 *params
-*bFailIfExists true 存在会失败，false 存在则修改
+*bCover true 存在则修改，false 存在不拷贝
 *return 0 失败，非零 成功
 */
-DLL_API int MT_CopyFile(const char* oldF, const char* newF,bool bFailIfExists=false);
+DLL_API int MT_CopyFile(const char* oldF, const char* newF,bool bCover=false);
 
 /*
 *选择文件夹

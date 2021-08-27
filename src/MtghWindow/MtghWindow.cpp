@@ -30,7 +30,7 @@ std::vector<std::string> splitWithStl(const std::string &str, const std::string 
 
 bool IsFile(const char* buf)
 {
-	if (strcspn(buf, ".")!= strlen(buf)) {
+	if (strcspn(buf, "*.*") > 0) {
 		return true;
 	}
 	return false;
@@ -59,7 +59,7 @@ BOOL myDeleteDirectory(CString directory_path)   //删除一个文件夹下的所有内容
 	return ret;
 }
 
-BOOL myCopyDirectory(CString olddir,CString newdir, bool bFailIfExists)   //拷贝文件夹下的所有内容
+BOOL myCopyDirectory(CString olddir,CString newdir, bool bCover)   //拷贝文件夹下的所有内容
 {
 	CreateDirectory(newdir, NULL);
 	int ret = 0;
@@ -74,14 +74,16 @@ BOOL myCopyDirectory(CString olddir,CString newdir, bool bFailIfExists)   //拷贝
 			//处理文件夹
 			CString newpath = finder.GetFilePath();
 			newpath.Replace(olddir, newdir);
-			myCopyDirectory(finder.GetFilePath(),newpath, bFailIfExists);
+			myCopyDirectory(finder.GetFilePath(),newpath, bCover);
 		}
 		else{
 			//处理文件
 			CString newpath = finder.GetFilePath();
 			if (IsFile(newpath.GetBuffer())) {
 				newpath.Replace(olddir, newdir);
-				ret = CopyFile(finder.GetFilePath(), newpath, bFailIfExists);
+				bool res = MT_IsExist(newpath.GetBuffer(), false);
+				if (!res || bCover)
+					ret = CopyFile(finder.GetFilePath(), newpath, false);
 			}
 		}			
 	}
@@ -234,7 +236,7 @@ int MT_Delete(const char* File)
 	}	
 	return IsFile(File) == true ? DeleteFile(File) : myDeleteDirectory(File);
 }
-int MT_CopyFile(const char* oldF, const char* newF, bool bFailIfExists)
+int MT_CopyFile(const char* oldF, const char* newF, bool bCover)
 {
 	if (strlen(oldF) == 0 || strlen(newF) == 0) {
 		return 0;
@@ -246,11 +248,13 @@ int MT_CopyFile(const char* oldF, const char* newF, bool bFailIfExists)
 		int lt = newpath.rfind("\\");
 		newpath = newpath.substr(0, lt);
 		MT_IsExist(newpath.c_str(), true);
-		res = CopyFile(oldF, newF, bFailIfExists);
+		bool res = MT_IsExist(newF, false);
+		if(!res || bCover)
+			res = CopyFile(oldF, newF, false);
 	}
 	else{
 		MT_IsExist(newF,true);
-		res = myCopyDirectory(oldF, newF,bFailIfExists);
+		res = myCopyDirectory(oldF, newF, false);
 	}
 	return res;
 }
@@ -262,7 +266,8 @@ bool MT_SelectFolder(string& path)
 
 	BROWSEINFO sInfo;
 	::ZeroMemory(&sInfo, sizeof(BROWSEINFO));
-
+	sInfo.pidlRoot = CSIDL_DESKTOP;
+	sInfo.ulFlags = BIF_NEWDIALOGSTYLE;//有新建文件夹按钮
 	LPITEMIDLIST lpidlBrowse = ::SHBrowseForFolder(&sInfo);
 	if (lpidlBrowse != NULL)
 	{
