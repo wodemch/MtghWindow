@@ -30,9 +30,16 @@ std::vector<std::string> splitWithStl(const std::string &str, const std::string 
 
 bool IsFile(const char* buf)
 {
-	if (strcspn(buf, "*.*") > 0) {
-		return true;
+	struct stat s;
+	if (stat(buf, &s) == 0) {
+		if (s.st_mode & S_IFREG) {
+			return true;
+		}
 	}
+
+	/*if (strcspn(buf, "*.*") > 0) {
+		return true;
+	}*/
 	return false;
 }
 BOOL myDeleteDirectory(CString directory_path)   //删除一个文件夹下的所有内容
